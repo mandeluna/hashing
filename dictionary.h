@@ -54,8 +54,7 @@ new_dictionary();
 /*
  * Allocate a dictionary with a hash vector initialized to a user-defined value
  *
- * initial_size - must be a power of 2 because the hash function uses
- * 		one less than this value as a bit mask to calculate the modulus
+ * initial_size - this should be a prime number to help ensure good distribution
  */
 dictionary_t *
 new_dictionary_size(long initial_size);
@@ -63,8 +62,7 @@ new_dictionary_size(long initial_size);
 /*
  * Allocate a dictionary with a hash vector initialized to a user-defined value
  *
- * initial_size - must be a power of 2 because the hash function uses
- * 		one less than this value as a bit mask to calculate the modulus
+ * initial_size - this should be a prime number to help ensure good distribution
  *
  * load_factor - between 0 and 1.0 to resize the dictionary when its size
  * 		exceeds this value * the current capacity of the dictionary

@@ -106,22 +106,28 @@ unload_words(dictionary_t *dict, const char *filename)
 	return bytes_freed;
 }
 
+// globals because no nested functions in ANSI C
+long count = 0;
+long num_entries = 0;
+long bytes_freed = 0;
+FILE *freed_words = NULL;
+
+void
+free_value(dict_key_t key, dict_value_t value)
+{
+	bytes_freed += (strlen(value) + 1);
+	fprintf(freed_words, "%s\n", (char *)value);
+	free((char *)value);
+	count++;
+}
+
 long
 free_words(dictionary_t *dict)
 {
-	long count = 0;
-	long bytes_freed = 0;
+	count = 0;
+	bytes_freed = 0;
 
-	FILE *freed_words = fopen("freed_words.txt", "w");
-
-	void
-	free_value(dict_key_t key, dict_value_t value)
-	{
-		bytes_freed += (strlen(value) + 1);
-		fprintf(freed_words, "%s\n", (char *)value);
-		free((char *)value);
-		count++;
-	}
+	freed_words = fopen("freed_words.txt", "w");
 
 	printf("Freeing values...");
 	dictionary_enumerate(dict, &free_value);
@@ -132,20 +138,21 @@ free_words(dictionary_t *dict)
 }
 
 void
+print_entry(dict_key_t key, dict_value_t value)
+{
+	if (count++ == 30) {
+		printf("skipping %lu entries...\n", num_entries-40);
+	}
+	else if ((count < 30) || (count > num_entries-10)) {
+		printf("\t%s:%s (%p)\n", key, (char *)value, (void *)value);
+	}
+}
+
+void
 test_dictionary_enum(dictionary_t *dict)
 {
-	long count = 0;
-
-	void
-	print_entry(dict_key_t key, dict_value_t value)
-	{
-		if (count++ == 30) {
-			printf("skipping %lu entries...\n", dict->num_entries-40);
-		}
-		else if ((count < 30) || (count > dict->num_entries-10)) {
-			printf("\t%s:%s (%p)\n", key, (char *)value, (void *)value);
-		}
-	}
+	count = 0;
+	num_entries = dict->num_entries;	// no nested functions in ANSI C :(
 
 	printf("Enumerating dictionary:\n");
 	dictionary_enumerate(dict, &print_entry);

@@ -117,8 +117,7 @@ new_dictionary()
 /*
  * Allocate a dictionary with a hash vector initialized to a user-defined value
  *
- * initial_size - should be a power of 2 because the hash function uses
- * 		one less than this value as a bit mask to calculate the modulus
+ * initial_size - this should be a prime number to help ensure good distribution
  */
 dictionary_t *
 new_dictionary_size(long initial_size)
@@ -129,8 +128,7 @@ new_dictionary_size(long initial_size)
 /*
  * Allocate a dictionary with a hash vector initialized to a user-defined value
  *
- * initial_size - must be a power of 2 because the hash function uses
- * 		one less than this value as a bit mask to calculate the modulus
+ * initial_size - this should be a prime number to help ensure good distribution
  *
  * load_factor - between 0 and 1.0 to resize the dictionary when its size
  * 		exceeds this value * the current capacity of the dictionary
@@ -496,6 +494,17 @@ dictionary_free_internal(dictionary_t *dict)
 	}
 }
 
+dictionary_t *new_dict = NULL;
+
+/*
+ * Used by dictionary_rebuild_table() to enumerate keys and values
+ */
+void
+copy_pair(dict_key_t key, dict_value_t value)
+{
+	dictionary_put(new_dict, key, value);
+}
+
 /*
  * Resize the dictionary, rehashing all keys
  * 
@@ -513,13 +522,11 @@ dictionary_rebuild_table(dictionary_t *dict, long new_size)
 	// printf("Collision buckets before resize:\n");
 	// print_collision_buckets(dict);
 #endif
-	dictionary_t *new_dict = new_dictionary_size(new_size);
-
-	void
-	copy_pair(dict_key_t key, dict_value_t value)
-	{
-		dictionary_put(new_dict, key, value);
+	if (new_dict) {
+		fprintf(stderr, "Attempt to recursively rebuild dictionary\n");
+		return;
 	}
+	new_dict = new_dictionary_size(new_size);
 
 	dictionary_enumerate(dict, &copy_pair);
 
@@ -542,6 +549,7 @@ dictionary_rebuild_table(dictionary_t *dict, long new_size)
 	// print_collision_buckets(dict);
 #endif
 	free(new_dict);
+	new_dict = NULL;
 }
 
 /*
