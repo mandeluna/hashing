@@ -19,9 +19,27 @@ typedef char * dict_key_t;
 
 typedef void * dict_value_t;
 
+#ifndef __has_feature
+  #define __has_feature(x) 0
+#endif
+#ifndef __has_extension
+  #define __has_extension __has_feature
+#endif
+
+#if defined __GNUC__ && !__has_feature(blocks)
+  #define __has_nested_functions 1
+#else
+  #define __has_nested_functions 0
+#endif
+
+#if __has_extension(blocks)
+// Use blocks instead of function pointers if we have them
+typedef void (^ dictionary_enumerator_t) (dict_key_t, dict_value_t);
+#else
 // Define a function returning void that takes key, value as arguments
 // to be passed as the second argument to dictionary_enumerate()
 typedef void (* dictionary_enumerator_t) (dict_key_t, dict_value_t);
+#endif
 
 typedef struct collision_bucket_t {
 	int num_elements;

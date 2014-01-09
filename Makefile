@@ -4,10 +4,11 @@
 
 INSTSET = 
 INCPATH = b
-LIBPATH = -lm
-CC = clang
+LIBPATH = -lm -lBlocksRuntime
 #CC = gcc
-CFLAGS = -g -std=gnu99 -D_GNU_SOURCE
+#CFLAGS = -g -std=gnu99 -D_GNU_SOURCE
+CC = clang
+CFLAGS = -g -std=c99 -fblocks -D_GNU_SOURCE
 #CFLAGS = -g -std=gnu99 -D_GNU_SOURCE -DDEBUG_VERBOSE_DICT_REMOVE
 #CFLAGS = -g -std=gnu99 -D_GNU_SOURCE -DDEBUG_VERBOSE_DICT_PUT
 #CFLAGS = -g -std=gnu99 -D_GNU_SOURCE -DDEBUG_VERBOSE_CB_UPDATE -DDEBUG_VERBOSE_DICT_ENUM

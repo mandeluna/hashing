@@ -106,31 +106,43 @@ unload_words(dictionary_t *dict, const char *filename)
 	return bytes_freed;
 }
 
-// globals because no nested functions in ANSI C
-long count = 0;
-long num_entries = 0;
-long bytes_freed = 0;
-FILE *freed_words = NULL;
-
-void
-free_value(dict_key_t key, dict_value_t value)
-{
-	bytes_freed += (strlen(value) + 1);
-	fprintf(freed_words, "%s\n", (char *)value);
-	free((char *)value);
-	count++;
-}
-
 long
 free_words(dictionary_t *dict)
 {
-	count = 0;
-	bytes_freed = 0;
-
-	freed_words = fopen("freed_words.txt", "w");
+#if __has_extension(blocks)
+	__block long count = 0;
+	__block long bytes_freed = 0;
+#else
+	long count = 0;
+	long bytes_freed = 0;
+#endif
 
 	printf("Freeing values...");
+
+	FILE *freed_words = fopen("freed_words.txt", "w");
+
+#if __has_nested_functions
+	#warning Compling with nested functions
+	void
+	free_value(dict_key_t key, dict_value_t value)
+	{
+		bytes_freed += (strlen(value) + 1);
+		fprintf(freed_words, "%s\n", (char *)value);
+		free((char *)value);
+		count++;
+	}
+
 	dictionary_enumerate(dict, &free_value);
+#elif __has_extension(blocks)
+	dictionary_enumerate(dict, ^ void (dict_key_t key, dict_value_t value) {
+		bytes_freed += (strlen(value) + 1);
+		fprintf(freed_words, "%s\n", (char *)value);
+		free((char *)value);
+		count++;
+	});
+#else
+	#warning Complier has no support for blocks or nested functions
+#endif
 	printf("%lu strings freed, %lu bytes\n", count, bytes_freed);
 
 	fclose(freed_words);
@@ -138,24 +150,42 @@ free_words(dictionary_t *dict)
 }
 
 void
-print_entry(dict_key_t key, dict_value_t value)
-{
-	if (count++ == 30) {
-		printf("skipping %lu entries...\n", num_entries-40);
-	}
-	else if ((count < 30) || (count > num_entries-10)) {
-		printf("\t%s:%s (%p)\n", key, (char *)value, (void *)value);
-	}
-}
-
-void
 test_dictionary_enum(dictionary_t *dict)
 {
-	count = 0;
-	num_entries = dict->num_entries;	// no nested functions in ANSI C :(
+#if __has_extension(blocks)
+	__block long count = 0;
+#else
+	long count = 0;
+#endif
 
 	printf("Enumerating dictionary:\n");
+
+#if __has_nested_functions
+	void
+	print_entry(dict_key_t key, dict_value_t value)
+	{
+		if (count++ == 30) {
+			printf("skipping %lu entries...\n", dict->num_entries-40);
+		}
+		else if ((count < 30) || (count > dict->num_entries-10)) {
+			printf("\t%s:%s (%p)\n", key, (char *)value, (void *)value);
+		}
+	}
+
 	dictionary_enumerate(dict, &print_entry);
+#elif __has_extension(blocks)
+	dictionary_enumerate(dict, ^ void (dict_key_t key, dict_value_t value)
+	{
+		if (count++ == 30) {
+			printf("skipping %lu entries...\n", dict->num_entries-40);
+		}
+		else if ((count < 30) || (count > dict->num_entries-10)) {
+			printf("\t%s:%s (%p)\n", key, (char *)value, (void *)value);
+		}
+	});
+#else
+	#warning Complier has no support for blocks or nested functions
+#endif
 	printf("\n");
 }
 

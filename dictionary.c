@@ -494,17 +494,6 @@ dictionary_free_internal(dictionary_t *dict)
 	}
 }
 
-dictionary_t *new_dict = NULL;
-
-/*
- * Used by dictionary_rebuild_table() to enumerate keys and values
- */
-void
-copy_pair(dict_key_t key, dict_value_t value)
-{
-	dictionary_put(new_dict, key, value);
-}
-
 /*
  * Resize the dictionary, rehashing all keys
  * 
@@ -522,13 +511,22 @@ dictionary_rebuild_table(dictionary_t *dict, long new_size)
 	// printf("Collision buckets before resize:\n");
 	// print_collision_buckets(dict);
 #endif
-	if (new_dict) {
-		fprintf(stderr, "Attempt to recursively rebuild dictionary\n");
-		return;
-	}
-	new_dict = new_dictionary_size(new_size);
+	dictionary_t *new_dict = new_dictionary_size(new_size);
 
+#if __has_nested_functions
+	void
+	copy_pair(dict_key_t key, dict_value_t value)
+	{
+		dictionary_put(new_dict, key, value);
+	}
 	dictionary_enumerate(dict, &copy_pair);
+#elif __has_extension(blocks)
+	dictionary_enumerate(dict, ^ void (dict_key_t key, dict_value_t value) {
+		dictionary_put(new_dict, key, value);
+	});
+#else
+	#warning No compiler support for blocks or nested functions
+#endif
 
 	if (dict->num_entries != new_dict->num_entries) {
 		fprintf(stderr, "Old dictionary entries %lu does not match new dictionary %lu\n",
@@ -549,7 +547,6 @@ dictionary_rebuild_table(dictionary_t *dict, long new_size)
 	// print_collision_buckets(dict);
 #endif
 	free(new_dict);
-	new_dict = NULL;
 }
 
 /*
